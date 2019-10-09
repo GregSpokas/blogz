@@ -33,8 +33,14 @@ class User(db.Model):
         self.username = username
         self.password = password
 
+@app.before_request
+def require_login():
+    allowed_routes = ['login','blog','index','signup']
+    if request.endpoint not in allowed_routes and 'username' not in session:
+        return redirect('/login')
+
 @app.route('/blog')
-def index():
+def blog():
     blog_id = request.args.get('id')
     if (blog_id):
         post = Blog.query.get(blog_id)
@@ -135,6 +141,12 @@ def signup():
         else:
             flash('That username is already in use', 'error')
             return redirect('/signup')
+
+@app.route('/logout')
+def logout():
+    del session['username']
+
+    return redirect('/blog')
 
 
 
