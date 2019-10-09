@@ -1,9 +1,10 @@
-from flask import Flask, redirect, render_template, request
+from flask import Flask, redirect, render_template, request, session, flash
 from flask_sqlalchemy import SQLAlchemy
+import re
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://build-a-blog:hJr3`krm*tEt-E6@localhost:8889/build-a-blog'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://blogz:gTG#49GBf*dUi#n@localhost:8889/blogz'
 app.config['SQLALCHEMY_ECHO'] = True
 db = SQLAlchemy(app)
 
@@ -12,14 +13,25 @@ class Blog(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120))
-    body = db.Column(db.String(1500))
+    body = db.Column(db.String(800))
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     
 
-    def __init__(self, title, body):
+    def __init__(self, title, body, owner):
         self.title = title
         self.body = body
+        self.owner = owner
 
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True)
+    password = db.Column(db.String(50))
+    blogs = db.relationship('Blog', backref='owner')
+
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
 
 @app.route('/blog')
 def index():
@@ -30,7 +42,7 @@ def index():
         post = post)
     posts = Blog.query.order_by(Blog.id.desc()).all()
 
-    return render_template('blog.html',title="Build-a-Blog", 
+    return render_template('blog.html',title="Blog Heaven", 
         posts=posts)
 
 
@@ -66,6 +78,64 @@ def new_post():
             body_error = body_error)
     else:
         return render_template('new_blog_entry.html')
+
+@app.route('/login', methods = ['POST','GET'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.password == password:
+            session['username'] = username
+            flash("Logged In")
+            return redirect('/newpost')
+        elif user and user.password != password:
+            flash('User password incorrect', 'error')
+            return redirect('/login')
+        elif not user:
+            flash('This username does not exist','error')
+
+    return render_template("login.html")
+
+@app.route('/signup',methods=['POST', 'GET'])
+def signup():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        verify = request.form['verify']
+
+        if username == "" or password == "" or verify =="":
+            flash('One or more fields are invalid', 'error')
+            return redirect('/signup')
+
+        if len(username) > 0:
+            if len(username) < 3 or re.search(r"\s",username):
+                flash('Please enter a username atleast 3 characters or username contains spaces.', 'error')
+                return redirect('/signup')
+            
+        if len(password) > 0:
+            if len(password) < 3 or re.search(r"\s",password):
+                flash('Please enter a password atleast 3 characters or password contains spaces.')
+                password = ""
+                return redirect('/signup')
+
+        if password != verify:
+            flash('Password and verify password do not match', 'error')
+            return redirect('/signup')
+        
+        existing_user = User.query.filter_by(username=username).first()
+        if not existing_user:
+            new_user = User(username, password)
+            db.session.add(new_user)
+            db.session.flush()
+            db.session.commit()
+            session['username'] = username
+            return redirect('/newpost')
+        else:
+            flash('That username is already in use', 'error')
+            return redirect('/signup')
+
 
 
 if __name__ == '__main__':
