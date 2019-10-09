@@ -60,14 +60,14 @@ def new_post():
 
         title = request.form['blog_title']
         body = request.form['blog_body']
-        title_error = ""
-        body_error = ""
 
         #Error Validation
         if title == "":
-            title_error = "Blog title is required."
+            flash('Blog title is required.','error')
+            return redirect('/newpost')
         if body == "":
-            body_error = "Blog body is required."
+            flash('Blog body is required.','error')
+            return redirect('/newpost')
         if not title_error and not body_error:
             blog_post = Blog(title, body)
             db.session.add(blog_post)
