@@ -2,12 +2,11 @@
 
 {% block content %}
 
+    {% for post in posts %}
     <h1 style="text-align: center">{{post.title}}</h1>
     <hr />
     <p>{{post.body}}</p>
     <br>
-    <p class="post-author">Written by <a href="/blog?user={{post.owner.id}}">{{post.owner.username}}</a></p>
-    <br>
-
+    {% endfor %}
 
 {% endblock %}

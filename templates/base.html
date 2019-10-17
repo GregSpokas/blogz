@@ -1,27 +1,47 @@
 <!doctype html>
 <html>
-    <head>
-        <a href="/blog" style="margin-right: 20pt; margin-left: 20pt;">Main Blog Page</a>
-        <a href="/newpost">Add a Blog Entry</a>
-        <div>
-            <a href="/login">Login</a>
-            <a href="/logout">Log Out</a>
-            <a href="/">Home</a>
-        </div>
-        
-        <style>
-            .error {
-                color: red;
-            }
-        </style>
-    </head>
+
+<head>
+    <nav>
+        <ul id="user-account">
+            <li><a href="/login">Login</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/blog">Main Blog Page</a></li>
+            <li><a href="/newpost">Add a Blog Entry</a></li>
+        </ul>
+    </nav>
+    <style>
+        .error {
+            color: red;
+        }
+
+        nav ul {
+            padding: 0;
+            display: inline-block;
+        }
+
+        nav ul li {
+            list-style: none;
+            display: inline-block;
+            margin-right: 15px;
+        }
+
+        nav #user-account {
+            float: right;
+        }
+    </style>
+</head>
+
 <body>
 
     {% with messages = get_flashed_messages(with_categories=True) %}
     <ul>
-    {% for category,message in messages %}
+        {% for category,message in messages %}
         <li class="{{category}}">{{message}}</li>
-    {% endfor %}
+        {% endfor %}
     </ul>
     {% endwith %}
 
@@ -29,4 +49,5 @@
     {% endblock %}
 
 </body>
+
 </html>

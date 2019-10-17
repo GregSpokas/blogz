@@ -7,6 +7,7 @@ app.config['DEBUG'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://blogz:gTG#49GBf*dUi#n@localhost:8889/blogz'
 app.config['SQLALCHEMY_ECHO'] = True
 db = SQLAlchemy(app)
+app.secret_key = 'Xd3*k2%Pu!3h72NcI8L1J'
 
 
 class Blog(db.Model):
@@ -42,10 +43,16 @@ def require_login():
 @app.route('/blog')
 def blog():
     blog_id = request.args.get('id')
+    user_id = request.args.get('user')
     if (blog_id):
         post = Blog.query.get(blog_id)
         return render_template('post.html', title = "Blog Entry",
         post = post)
+    if (user_id):
+        user_posts = Blog.query.filter_by(owner_id = user_id).order_by(Blog.id.desc()).all()
+
+        return render_template('user_posts.html', posts = user_posts )
+    
     posts = Blog.query.order_by(Blog.id.desc()).all()
 
     return render_template('blog.html',title="Blog Heaven", 
@@ -55,6 +62,9 @@ def blog():
 @app.route('/newpost', methods = ['POST','GET'])
 
 def new_post():
+
+    owner = User.query.filter_by(username=session['username']).first()
+
     if request.method == 'POST':
 
 
@@ -62,14 +72,12 @@ def new_post():
         body = request.form['blog_body']
 
         #Error Validation
-        if title == "":
-            flash('Blog title is required.','error')
+        if title == "" or body == "":
+            flash('Blog title is required or blog body is required.','error')
             return redirect('/newpost')
-        if body == "":
-            flash('Blog body is required.','error')
-            return redirect('/newpost')
-        if not title_error and not body_error:
-            blog_post = Blog(title, body)
+
+        if not title == "" and not body == "":
+            blog_post = Blog(title, body, owner)
             db.session.add(blog_post)
             db.session.flush()
             db.session.commit()
@@ -79,9 +87,7 @@ def new_post():
 
             return render_template("new_blog_entry.html",
             blog_title = title,
-            blog_body = body,
-            title_error = title_error,
-            body_error = body_error)
+            blog_body = body)
     else:
         return render_template('new_blog_entry.html')
 
@@ -117,12 +123,37 @@ def signup():
 
         if len(username) > 0:
             if len(username) < 3 or re.search(r"\s",username):
+                if len(password) > 0:
+                    if len(password) < 3 or re.search(r"\s",password):
+                        flash('Please enter a username atleast 3 characters or username contains spaces.', 'error')
+                        flash('Please enter a password atleast 3 characters or password contains spaces.', 'error')
+                        password = ""
+                        return redirect('/signup')
+                    else:
+                        flash('Please enter a username atleast 3 characters or username contains spaces.', 'error')
+                        return redirect('/signup')
+
+        if len(password) > 0:
+            if len(password) < 3 or re.search(r"\s",password):
+                if len(username) > 0:
+                    if len(username) < 3 or re.search(r"\s",username):
+                        flash('Please enter a username atleast 3 characters or username contains spaces.', 'error')
+                        flash('Please enter a password atleast 3 characters or password contains spaces.', 'error')
+                        password = ""
+                        return redirect('/signup')
+                    else:
+                        flash('Please enter a password atleast 3 characters or password contains spaces.', 'error')
+                        password = ""
+                        return redirect('/signup')
+
+
+
                 flash('Please enter a username atleast 3 characters or username contains spaces.', 'error')
                 return redirect('/signup')
             
         if len(password) > 0:
             if len(password) < 3 or re.search(r"\s",password):
-                flash('Please enter a password atleast 3 characters or password contains spaces.')
+                flash('Please enter a password atleast 3 characters or password contains spaces.', 'error')
                 password = ""
                 return redirect('/signup')
 
@@ -142,10 +173,24 @@ def signup():
             flash('That username is already in use', 'error')
             return redirect('/signup')
 
+    return render_template('signup.html')
+
+@app.route('/')
+def index():
+    
+    user_id = request.args.get('id')
+    if (user_id):
+        user = User.query.get(user_id)
+        return render_template('user_posts.html', title = "User's Posts",
+        user = user)
+    users = User.query.all()
+
+    return render_template('index.html',title="User List",
+    users=users)
+
 @app.route('/logout')
 def logout():
     del session['username']
-
     return redirect('/blog')
 
 
